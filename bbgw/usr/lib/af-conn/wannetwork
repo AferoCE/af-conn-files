@@ -1,0 +1,26 @@
+#!/bin/sh
+
+ECHO=/bin/echo
+IFCONFIG=/sbin/ifconfig
+
+. /usr/lib/af-conn/get_netif_names
+
+usage()
+{
+	${ECHO} "usage -- wannetwork up|down <ip_v4> <subnet_v4> <dns1_v4> <dns2_v4> <ip_v6> <subnet_v6> <dns1_v6> <dns2_v6>"
+}
+
+case $1 in
+	up)
+		echo "No network setup necessary for CINTERION WAN"
+		logger "wannetwork:No network setup necessary for CINTERION WAN"
+		;;
+
+	down)
+		${IFCONFIG} ${WAN_INTERFACE_0} down
+		;;
+
+	*)
+		usage
+		;;
+esac

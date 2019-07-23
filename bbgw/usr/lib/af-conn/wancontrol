@@ -1,0 +1,118 @@
+#!/bin/sh
+
+# wancontrol -- set WAN power states
+#
+# Copyright 2016 (c) Afero, Inc. All rights reserved.
+
+TTY_DEVICE=/dev/ttyACM0
+TTY_TIMEOUT=18 # 9 seconds / 0.5 seconds per iteration
+
+SLEEP=/bin/sleep
+USLEEP=/bin/usleep
+ATCMD=/usr/bin/atcmd
+ECHO=/bin/echo
+
+usage()
+{
+	${ECHO} "usage -- wancontrol on|off|reset"
+}
+
+wait_for_tty()
+{
+	local i=0
+	while [ ! -e ${TTY_DEVICE} ] ; do
+		${USLEEP} 500000
+		if [ ${i} -ge ${TTY_TIMEOUT} ] ; then
+			return 1
+		fi
+		i=$((${i} + 1))
+	done
+	return 0
+}
+
+wait_for_no_tty()
+{
+	local i=0
+	while [ -e ${TTY_DEVICE} ] ; do
+		${SLEEP} 1
+		if [ ${i} -ge ${TTY_TIMEOUT} ] ; then
+			${ECHO} "wancontrol:no tty"
+			return 1
+		fi
+		i=$((${i} + 1))
+	done
+	return 0
+}
+
+GPIO_PATH=/sys/class/gpio
+LTE_PWR_EN=88
+LTE_ON=86
+
+wankill()
+{
+	# shut off power to the WAN
+	[ -e ${GPIO_PATH}/gpio${LTE_PWR_EN} ] || ${ECHO} -n ${LTE_PWR_EN} > ${GPIO_PATH}/export
+	${ECHO} -n out > ${GPIO_PATH}/gpio${LTE_PWR_EN}/direction
+	${ECHO} -n 0 > ${GPIO_PATH}/gpio${LTE_PWR_EN}/value
+}
+
+wanon()
+{
+	# if TTY device already exists don't do power up sequence
+	if [ -e ${TTY_DEVICE} ] ; then
+		return 0
+	fi
+
+	# export GPIOs if they haven't been exported
+	[ -e ${GPIO_PATH}/gpio${LTE_PWR_EN} ] || ${ECHO} -n ${LTE_PWR_EN} > ${GPIO_PATH}/export
+	[ -e ${GPIO_PATH}/gpio${LTE_ON} ] || ${ECHO} -n ${LTE_ON} > ${GPIO_PATH}/export
+
+	${ECHO} -n out > ${GPIO_PATH}/gpio${LTE_PWR_EN}/direction
+	${ECHO} -n out > ${GPIO_PATH}/gpio${LTE_ON}/direction
+
+	# ensure WAN power is off
+	${ECHO} -n 0 > ${GPIO_PATH}/gpio${LTE_PWR_EN}/value
+
+	${SLEEP} 1
+
+	# power up the WAN with LTE_ON enabled
+	${ECHO} -n 1 > ${GPIO_PATH}/gpio${LTE_ON}/value
+	${ECHO} -n 1 > ${GPIO_PATH}/gpio${LTE_PWR_EN}/value
+
+	${SLEEP} 1
+
+	# disable LTE_ON
+	${ECHO} -n 0 > ${GPIO_PATH}/gpio${LTE_ON}/value
+
+	wait_for_tty
+	local ret=$?
+	if [ ${ret} -eq 0 ] ; then
+		${SLEEP} 2
+	else
+		wankill
+	fi
+
+	return ${ret}
+}
+
+wanoff()
+{
+	if [ -e ${TTY_DEVICE} ] ; then
+		${ATCMD} "at+cops=2"
+		${ATCMD} "at+cfun=0"
+		wait_for_no_tty
+	fi
+	sleep 2
+	wankill
+	sleep 2
+}
+
+res=0
+case `${ECHO} $1 | tr 'A-Z' 'a-z'` in
+
+	on) wanon ; res=$? ;;
+	off) wanoff ; res=$? ;;
+	reset) wanreset ; res=$? ;;
+	*) usage ; exit 1 ;;
+esac
+exit $res

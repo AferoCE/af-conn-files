@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+### BEGIN USAGE INFO
+#
+# Required for:         attribute info
+# Used by:              connmgr daemon  (connection manager)
+# Required by platform: Raspberry Pi3
+# Short-Description:    Allow 3rd party implementer to tell us the network
+#                       capabilities (ie. what type of network interfaces are
+#                       available - ethernet, wifi, celluar, etc )
+#
+# Note:
+# (per device registry definition)
+# Bitfield indicating which network interfaces this hardware contains
+#   bit 0 - Wi-Fi 1
+#   bit 1 - WAN 1
+#   bit 2 - Ethernet 1
+#
+### END USAGE INFO
+
+set -e
+
+# HEX representation of the HW info
+# wifi = 0x00000001
+WIFI_SUPPORTED=0x01
+CELLULAR_SUPPORTED=0x00
+ETHERNET_SUPPORTED=0x04
+
+#echo $WIFI_SUPPORTED
+#echo $ETHERNET_SUPPORTED
+cap=$(($WIFI_SUPPORTED | $ETHERNET_SUPPORTED | $CELLULAR_SUPPORTED))
+
+#echo $cap
+######################
+#
+# return the system network HW capabilities
+#
+
+exit $cap

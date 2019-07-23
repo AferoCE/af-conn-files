@@ -1,0 +1,35 @@
+# file: afero_whitelist.dev
+#
+# Afero whitelist
+# See create_afero_whitelist.sh
+#
+# Format Note:
+# 1.  # designate comments and can be skipped
+# 2.  white space lines are skipped
+# 3.  wildcard matches 1 or more characters
+# 4.  It is good to have/keep the exact URL, which allows the FW to have
+#     an entires for it.
+
+#  conclave
+conclave.dev.afero.io
+conclave-stream.dev.afero.io
+
+# Echo service
+echo.afero.io
+echo.dev.afero.io
+
+# Log server(s)
+squirrel.dev.afero.io
+
+# OTA server(s) - obfuscated url
+# And wildcard support for OTA regional servers
+otacdn.dev.afero.io
+otacdn*.dev.afero.io
+
+# aftunnel service
+aft.afero.io
+
+# future-prove URL
+# Note: for wildcard matched entries, we use DNS lookup and extraction to
+# provide access.
+*.afero.io

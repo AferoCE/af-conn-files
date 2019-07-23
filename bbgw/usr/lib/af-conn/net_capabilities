@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# Network capabilities script used by the Connection Manager to determine
+# what network interfaces are available based on the hardware configuration
+# of the board.
+
+# According to the Network Capabilities attribute definition:
+# Bitfield indicating which network interfaces this hardware contains
+#   bit 0 - Wi-Fi 1
+#   bit 1 - WAN 1
+#   bit 2 - Ethernet 1
+#
+
+set -e
+
+WIFI_SUPPORTED=1
+CELLULAR_SUPPORTED=0
+ETHERNET_SUPPORTED=0
+
+cap=0
+[ $WIFI_SUPPORTED -ne "0" ] && cap=$(($cap | 0x01))
+[ $CELLULAR_SUPPORTED -ne "0" ] && cap=$(($cap | 0x02))
+[ $ETHERNET_SUPPORTED -ne "0" ] && cap=$(($cap | 0x04))
+
+exit $cap
